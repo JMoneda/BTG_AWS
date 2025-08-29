@@ -121,8 +121,8 @@ public static class FondosEndpoints
             };
             await transacciones.AddAsync(tx, ct);
 
-            // Notificar cancelación
-            await notify.EnviarSuscripcionAsync(cliente, new Fondo { Id = activo.FondoId, Nombre = activo.Nombre }, tx.Monto, ct);
+            // 🔹 Notificar cancelación (ahora con método correcto)
+            await notify.EnviarCancelacionAsync(cliente, new Fondo { Id = activo.FondoId, Nombre = activo.Nombre }, activo.Monto, ct);
 
             return Results.Ok(new { message = "Cancelación realizada con éxito", transaccionId = tx.Id });
         });

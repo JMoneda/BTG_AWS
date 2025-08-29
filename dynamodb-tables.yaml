@@ -1,0 +1,79 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Tablas DynamoDB para BTG.Api"
+
+Resources:
+
+  ClientesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Clientes
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: Id
+          AttributeType: S
+        - AttributeName: Email
+          AttributeType: S
+      KeySchema:
+        - AttributeName: Id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: Email-index
+          KeySchema:
+            - AttributeName: Email
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  FondosTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Fondos
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: Id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: Id
+          KeyType: HASH
+
+  TransaccionesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Transacciones
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: Id
+          AttributeType: S
+        - AttributeName: ClienteId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: Id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: ClienteId-index
+          KeySchema:
+            - AttributeName: ClienteId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  UsuariosTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Usuarios
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: Id
+          AttributeType: S
+        - AttributeName: Username
+          AttributeType: S
+      KeySchema:
+        - AttributeName: Id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: Username-index
+          KeySchema:
+            - AttributeName: Username
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL

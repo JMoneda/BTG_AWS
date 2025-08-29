@@ -40,6 +40,9 @@ public class FondoService : IFondoService
                 400
             );
 
+        if (req.Monto is null)
+            throw new BusinessException("El monto de suscripción es obligatorio", 400);
+
         // Actualizar saldo y agregar fondo activo
         cliente.Saldo -= req.Monto.Value;
         cliente.FondosActivos.Add(new FondoActivo
@@ -71,37 +74,36 @@ public class FondoService : IFondoService
         return transaccion.Id;
     }
 
-    public async Task<Guid> CancelarAsync(CancelarRequest req, CancellationToken ct)
+    public async Task<Guid> CancelarAsync(Guid clienteId, CancelarRequest req, CancellationToken ct)
     {
-        var cliente = await _clientes.GetByIdAsync(req.ClienteId, ct)
+        var cliente = await _clientes.GetByIdAsync(clienteId, ct)
             ?? throw new BusinessException("Cliente no existe", 404);
 
         var activo = cliente.FondosActivos.FirstOrDefault(x => x.FondoId == req.FondoId)
             ?? throw new BusinessException("El cliente no tiene suscripción activa a ese fondo");
 
-        // Reintegrar saldo y quitar fondo activo
         cliente.Saldo += activo.Monto;
         cliente.FondosActivos.Remove(activo);
-
         await _clientes.UpdateAsync(cliente, ct);
 
         var tx = new Transaccion
         {
-            Id = Guid.NewGuid(),         
+            Id = Guid.NewGuid(),
             ClienteId = cliente.Id,
             FondoId = req.FondoId,
             Tipo = "CANCELACION",
-            Monto = -activo.Monto,       
+            Monto = -activo.Monto,
             Fecha = DateTime.UtcNow
         };
 
         await _txs.AddAsync(tx, ct);
 
         var fondo = new Fondo { Id = activo.FondoId, Nombre = activo.Nombre, MontoMinimo = 0 };
-        await _notify.EnviarSuscripcionAsync(cliente, fondo, tx.Monto, ct);
+        await _notify.EnviarCancelacionAsync(cliente, fondo, activo.Monto, ct);
 
-        return tx.Id; 
+        return tx.Id;
     }
+
 
     // Obtener historial de transacciones del cliente
     public Task<List<Transaccion>> HistorialAsync(Guid clienteId, CancellationToken ct)

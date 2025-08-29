@@ -1,8 +1,11 @@
 ﻿using BTG.Domain.Entities;
 
-public record CrearClienteRequest(
-    string Nombre,
-    string Email,
-    string Telefono,
-    decimal Saldo,
-    PreferenciaNotificacion PreferenciaNotificacion);
+namespace BTG.Application.DTOs
+{
+    public record CrearClienteRequest(
+        string Nombre,
+        string Email,
+        string Telefono,
+        decimal Saldo,
+        PreferenciaNotificacion PreferenciaNotificacion);
+}

@@ -1,0 +1,15 @@
+﻿{
+  "profile": "btg-deployer",
+  "region": "us-east-1",
+  "configuration": "Release",
+  "framework": "net8.0",
+  "function-memory-size": 512,
+  "function-timeout": 30,
+  "stack-name": "btg-api-stack",
+  "s3-bucket": "btg-api-artifacts-4s828e7o",
+  "template": "serverless.template",
+  "s3-prefix": "btg-api",
+  "template-parameters": {
+    "ShouldCreateApiGateway": "true"
+  }
+}

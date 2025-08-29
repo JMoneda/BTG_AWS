@@ -33,8 +33,7 @@ namespace BTG.Tests.Application
 
         [Fact]
         public async Task SuscribirseAsync_Should_Add_FondoActivo_And_Transaccion()
-        {
-            // Arrange
+        {            
             var clienteId = Guid.NewGuid();
             var fondoId = Guid.NewGuid().ToString();
             var monto = 1500m;
@@ -60,13 +59,11 @@ namespace BTG.Tests.Application
                 .ReturnsAsync(fondo);
 
             var request = new SuscribirseRequest(fondoId, monto);
-
-            // Act
+                        
             var result = await _service.SuscribirseAsync(clienteId, request, CancellationToken.None);
-
-            // Assert
+                        
             Assert.Single(cliente.FondosActivos);
-            Assert.Equal(500m, cliente.Saldo); // 2000 - 1500
+            Assert.Equal(500m, cliente.Saldo);
             Assert.NotEqual(Guid.Empty, result);
 
             _transaccionRepoMock.Verify(r =>
@@ -80,7 +77,6 @@ namespace BTG.Tests.Application
         [Fact]
         public async Task SuscribirseAsync_Should_Throw_BusinessException_When_Saldo_Insuficiente()
         {
-            // Arrange
             var clienteId = Guid.NewGuid();
             var fondoId = Guid.NewGuid().ToString();
 
@@ -105,8 +101,6 @@ namespace BTG.Tests.Application
                 .ReturnsAsync(fondo);
 
             var request = new SuscribirseRequest(fondoId, Monto: 1500m);
-
-            // Act & Assert
             var ex = await Assert.ThrowsAsync<BusinessException>(() =>
                 _service.SuscribirseAsync(clienteId, request, CancellationToken.None));
 
@@ -124,63 +118,60 @@ namespace BTG.Tests.Application
         public async Task CancelarAsync_Should_Remove_FondoActivo_And_Add_Transaccion()
         {
             // Arrange
-            var clienteId = Guid.NewGuid();
-            var fondoId = Guid.NewGuid().ToString();
-
             var cliente = new Cliente
             {
-                Id = clienteId,
-                Nombre = "Ana María",
-                Saldo = 2000m,
+                Id = Guid.NewGuid(),
+                Nombre = "Test",
+                Saldo = 0,
                 FondosActivos = new List<FondoActivo>
-                {
-                    new FondoActivo
-                    {
-                        FondoId = fondoId,
-                        Nombre = "Fondo Cancelable",
-                        Monto = 1500m,
-                        FechaVinculacion = DateTime.UtcNow
-                    }
-                }
-            };
-
-            var fondo = new Fondo
+        {
+            new FondoActivo
             {
-                Id = fondoId,
-                Nombre = "Fondo Cancelable",
-                MontoMinimo = 1000m
+                FondoId = "F1",
+                Nombre = "Fondo Test",
+                Monto = 1500,
+                FechaVinculacion = DateTime.UtcNow
+            }
+        }
             };
 
-            _clienteRepoMock.Setup(r => r.GetByIdAsync(cliente.Id, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(cliente);
+            var fondo = new Fondo { Id = "F1", Nombre = "Fondo Test", MontoMinimo = 0 };
 
-            var request = new CancelarRequest
-            {
-                ClienteId = clienteId,
-                FondoId = fondoId
-            };
+            var mockClientes = new Mock<IClienteRepository>();
+            mockClientes.Setup(r => r.GetByIdAsync(cliente.Id, It.IsAny<CancellationToken>()))
+                        .ReturnsAsync(cliente);
 
-            // Act
-            await _service.CancelarAsync(request, CancellationToken.None);
+            var mockFondos = new Mock<IFondoRepository>();
+            var mockTxs = new Mock<ITransaccionRepository>();
+            var mockNotify = new Mock<INotificacionService>();
 
-            // Assert
+            var service = new FondoService(mockClientes.Object, mockFondos.Object, mockTxs.Object, mockNotify.Object);
+
+            var request = new CancelarRequest { FondoId = "F1" };
+                        
+            await service.CancelarAsync(cliente.Id, request, CancellationToken.None);
+                        
             Assert.Empty(cliente.FondosActivos);
-            _transaccionRepoMock.Verify(r =>
-                r.AddAsync(It.IsAny<Transaccion>(), It.IsAny<CancellationToken>()), Times.Once);
+            Assert.Equal(1500, cliente.Saldo);
 
-            _notificacionServiceMock.Verify(n =>
-                n.EnviarSuscripcionAsync(
-                    It.Is<Cliente>(c => c.Id == cliente.Id),
-                    It.Is<Fondo>(f => f.Id == fondo.Id),
-                    -1500m,
-                    It.IsAny<CancellationToken>()),
+            mockClientes.Verify(r => r.UpdateAsync(cliente, It.IsAny<CancellationToken>()), Times.Once);
+            mockTxs.Verify(r => r.AddAsync(It.Is<Transaccion>(t =>
+                t.Tipo == "CANCELACION" &&
+                t.Monto == -1500
+            ), It.IsAny<CancellationToken>()), Times.Once);
+
+            mockNotify.Verify(n => n.EnviarCancelacionAsync(
+                It.Is<Cliente>(c => c.Id == cliente.Id),
+                It.Is<Fondo>(f => f.Id == fondo.Id),
+                1500,
+                It.IsAny<CancellationToken>()),
                 Times.Once);
         }
+
 
         [Fact]
         public async Task CancelarAsync_Should_Throw_BusinessException_When_Fondo_Not_Found()
         {
-            // Arrange
             var clienteId = Guid.NewGuid();
             var fondoId = Guid.NewGuid().ToString();
 
@@ -189,7 +180,7 @@ namespace BTG.Tests.Application
                 Id = clienteId,
                 Nombre = "Carlos López",
                 Saldo = 2000m,
-                FondosActivos = new List<FondoActivo>() // vacío
+                FondosActivos = new List<FondoActivo>()
             };
 
             _clienteRepoMock.Setup(r => r.GetByIdAsync(cliente.Id, It.IsAny<CancellationToken>()))
@@ -197,13 +188,11 @@ namespace BTG.Tests.Application
 
             var request = new CancelarRequest
             {
-                ClienteId = clienteId,
                 FondoId = fondoId
             };
 
-            // Act & Assert
             var exception = await Assert.ThrowsAsync<BusinessException>(() =>
-                _service.CancelarAsync(request, CancellationToken.None));
+                _service.CancelarAsync(clienteId, request, CancellationToken.None));
 
             Assert.Contains("no tiene suscripción activa", exception.Message);
 

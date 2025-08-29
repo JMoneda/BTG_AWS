@@ -58,8 +58,6 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponse> RefreshAsync(RefreshRequest req, CancellationToken ct)
     {
-        var principal = _tokens.GetPrincipalFromExpiredToken(req.RefreshToken); 
-        
         var (userId, _) = _tokens.ReadRefreshToken(req.RefreshToken);
         var user = await _users.GetByIdAsync(userId, ct)
             ?? throw new BusinessException("Usuario no encontrado", 404);

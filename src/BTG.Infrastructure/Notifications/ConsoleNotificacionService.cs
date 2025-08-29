@@ -13,11 +13,20 @@ public class ConsoleNotificacionService : INotificacionService
         _logger = logger;
     }
 
-    public Task EnviarSuscripcionAsync(Cliente c, Fondo f, decimal monto, CancellationToken ct)
+    public Task EnviarSuscripcionAsync(Cliente cliente, Fondo fondo, decimal monto, CancellationToken ct)
     {
         _logger.LogInformation("Notificación enviada por {Canal} -> Cliente:{Cliente} Fondo:{Fondo} Monto:{Monto}",
-            c.PreferenciaNotificacion, c.Nombre, f.Nombre, monto);
+            cliente.PreferenciaNotificacion, cliente.Nombre, fondo.Nombre, monto);
 
         return Task.CompletedTask;
     }
+    public Task EnviarCancelacionAsync(Cliente cliente, Fondo fondo, decimal monto, CancellationToken ct)
+    {
+        _logger.LogInformation("Cancelación enviada por {Canal} -> Cliente:{Cliente} Fondo:{Fondo} Monto:{Monto}",
+            cliente.PreferenciaNotificacion, cliente.Nombre, fondo.Nombre, monto);
+
+        return Task.CompletedTask;
+    }
+
+
 }

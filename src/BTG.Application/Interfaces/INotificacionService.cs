@@ -4,5 +4,7 @@ namespace BTG.Application.Interfaces;
 
 public interface INotificacionService
 {
-    Task EnviarSuscripcionAsync(Cliente c, Fondo f, decimal monto, CancellationToken ct);
+    Task EnviarSuscripcionAsync(Cliente cliente, Fondo fondo, decimal monto, CancellationToken ct);
+    Task EnviarCancelacionAsync(Cliente cliente, Fondo fondo, decimal monto, CancellationToken ct);
 }
+

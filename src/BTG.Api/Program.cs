@@ -4,15 +4,21 @@ using BTG.Api.Config;
 using BTG.Api.Endpoints;
 using BTG.Application.Exceptions;
 using Serilog;
+using BTG.Infrastructure;
+using Amazon.Lambda.AspNetCoreServer.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Si corre en AWS, usar hosting Lambda 
+builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
+
 
 // Logging con Serilog
 builder.Host.UseSerilog((ctx, lc) =>
     lc.ReadFrom.Configuration(ctx.Configuration).WriteTo.Console());
 
 // Inyección de dependencias
-builder.Services.AddProjectServices(builder.Configuration);
+builder.Services.AddInfrastructure(builder.Configuration);
 
 // Seguridad y autenticación (AddAuthentication + AddAuthorization + JwtBearer)
 builder.Services.AddSecurity(builder.Configuration);
@@ -107,9 +113,11 @@ app.Use(async (context, next) =>
 });
 
 // Endpoints REST
-app.MapAuthEndpoints();            
-app.MapClientesEndpoints();        
-app.MapFondosEndpoints();          
-app.MapTransaccionesEndpoints();   
+app.MapAuthEndpoints();
+app.MapClientesEndpoints();
+app.MapFondosEndpoints();
+app.MapTransaccionesEndpoints();
 
-app.Run();
+app.MapGet("/health", () => Results.Ok(new { ok = true }));
+
+await app.RunAsync();

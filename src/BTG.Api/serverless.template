@@ -1,0 +1,57 @@
+﻿{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": "AWS::Serverless-2016-10-31",
+  "Description": "BTG API (ASP.NET Core on Lambda, .NET 8)",
+  "Resources": {
+    "ApiFunction": {
+      "Type": "AWS::Serverless::Function",
+      "Properties": {
+        "FunctionName": "btg-api",
+        "Handler": "BTG.Api",
+        "Runtime": "dotnet8",
+        "MemorySize": 512,
+        "Timeout": 30,
+        "PackageType": "Zip",
+        "Policies": [
+          "AWSLambdaBasicExecutionRole",
+          { "DynamoDBCrudPolicy": { "TableName": "Clientes" } },
+          { "DynamoDBCrudPolicy": { "TableName": "Fondos" } },
+          { "DynamoDBCrudPolicy": { "TableName": "Transacciones" } },
+          { "DynamoDBCrudPolicy": { "TableName": "Usuarios" } }
+        ],
+        "Environment": {
+          "Variables": {
+            "ClientesTable": "Clientes",
+            "FondosTable": "Fondos",
+            "TransaccionesTable": "Transacciones",
+            "UsuariosTable": "Usuarios"
+          }
+        },
+        "Events": {
+          "Api": {
+            "Type": "HttpApi",
+            "Properties": {
+              "PayloadFormatVersion": "2.0",
+              "Path": "/{proxy+}",
+              "Method": "ANY"
+            }
+          }
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "ApiUrl": {
+      "Description": "Base URL of the HTTP API",
+      "Value": {
+        "Fn::Sub": "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+      }
+    },
+    "HttpApiId": {
+      "Description": "ID of the HTTP API Gateway",
+      "Value": {
+        "Ref": "ServerlessHttpApi"
+      }
+    }
+  }
+}
